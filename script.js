@@ -1,7 +1,4 @@
 var gameMode = "start";
-// deal - deal cards
-// userTurn -- hit or stand
-// computerTurn
 
 var deck = [];
 
@@ -16,11 +13,21 @@ var comHandString = "";
 
 var playedCards = []; // decide whether played cards get removed from unplayed deck or reshuffle after every round?
 
-var blackjack = 21;
+var gifs = {
+  dealer21:
+    '<img src="https://media3.giphy.com/media/26ufcZICbgCSGe5sQ/giphy.gif">',
+  thinking:
+    '<img src="https://c.tenor.com/RFRPkimHjfcAAAAC/zach-galifianakis-very-bad-trip-meme.gif">',
+  applause:
+    '<img src="https://media0.giphy.com/media/lodhOPXFCRTbTY9TbL/giphy.gif">',
+  congrats:
+    '<img src="https://c.tenor.com/TnSF3OSQE1cAAAAd/fireworks-congratulations.gif">',
+  itsATie:
+    '<img src="https://media1.giphy.com/media/xT3i0VNrc6Ny7bxfJm/giphy.gif">',
+};
 
 var main = function (input) {
   if (gameMode == "start") {
-    // only initialise deck at start of game
     deck = shuffleCards(makeDeck());
 
     // deal 2 cards to each player
@@ -28,8 +35,6 @@ var main = function (input) {
       userHand.push(deck.shift());
       comHand.push(deck.shift());
     }
-    // console.log(userHand);
-    // console.log(comHand);
 
     // calculate sum of cards of dealer and user to determine if black jack
     userHandSum = calculateCardSum(userHand);
@@ -44,82 +49,114 @@ var main = function (input) {
     gameMode = "user turn";
 
     userHandString = concatHand(userHand);
+    comHandString = concatHand(comHand);
 
-    var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHand[0].name} of ${comHand[0].suit}, ${comHand[1].name} of ${comHand[1].suit}<br><br>Enter 'deal' to get additional card or 'pass' to end your turn`;
+    var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString} <br><br>Enter 'deal' to get additional card or 'pass' to end your turn`;
 
     return myOutputValue;
   } else if (gameMode == "user turn") {
     // waiting for user to hit or stand
 
+    // auto evaluate whether ace should be 1 or 11 (rank)
+    // ace should always count as 11 unless exceeds 21
+
+    // ace rank should start at 11
+    // if sum of cards > 21
+    // if hand[n].cardName == ace
+    // hand[n].rank = 1
+
     if (input.toLowerCase() == "deal") {
       userHand.push(deck.shift());
       userHandSum = calculateCardSum(userHand);
+      userHandString = concatHand(userHand);
+      comHandString = concatHand(comHand);
+
       console.log("user total after adding cards: " + userHandSum);
 
-      // console.log(deck.length);
+      if (userHandSum == 21) {
+        gameReset();
+        gameMode = "start";
+        return `Blackjack! You win!`;
+      }
 
+      if (userHandSum > 21) {
+        // check for aces in the hand
+        gameReset();
+        gameMode = "start";
+        return "You exceeded 21, you lose!";
+      } else {
+        var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString}<br><br>Enter 'deal' to get additional card or 'pass' to end your turn`;
+
+        return myOutputValue;
+      }
       // need a conditional here to evaluate sum > 21
       // deal until you lose bitch
       // you automatically lose if you go beyond 21 and dealer wins
       // reset game
 
-      userHandString = concatHand(userHand);
-      comHandString = concatHand(comHand);
-
       // console.log(userHandString);
 
-      // gameMode = "deal";
-
-      var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString}<br><br>Enter 'deal' to get additional card or 'pass' to end your turn`;
-
-      return myOutputValue;
+      // dealer's turn
     } else if (input.toLowerCase() == "pass") {
       gameMode = "dealer turn";
 
-      var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString}<br><br>It's the dealer's turn. Click submit to determine winner`;
-      return myOutputValue;
-    }
-  } else if (gameMode == "dealer turn") {
-    while (comHandSum < 17) {
-      comHand.push(deck.shift());
-      comHandSum = calculateCardSum(comHand);
-      comHandString = concatHand(comHand);
-      console.log("dealer total after adding cards: " + comHandSum);
-    }
+      while (comHandSum < 17) {
+        comHand.push(deck.shift());
+        comHandSum = calculateCardSum(comHand);
+        comHandString = concatHand(comHand);
+        console.log("dealer total after adding cards: " + comHandSum);
+      }
 
-    if (comHandSum > 21) {
-      var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString}<br><br>You Win! Click Submit to begin a new round.`;
-      gameReset();
-      return myOutputValue;
-    } else {
-      gameMode = "determine winner";
-      var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString}<br><br>You Win! Click Submit to find out who wins!.`;
-      return myOutputValue;
+      if (comHandSum > 21) {
+        comHandString = concatHand(comHand);
+
+        var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString}<br><br>Dealer exceeds 21, You win! Click Submit to begin a new round.`;
+        gameReset();
+        return myOutputValue;
+      } else {
+        gameMode = "determine winner";
+        var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString}<br><br>Click Submit to find out who wins<br><br>${gifs.thinking}`;
+        return myOutputValue;
+      }
     }
   } else if (gameMode == "determine winner") {
-    gameResult(userHandSum, comHandSum);
+    var winner = gameResult(userHandSum, comHandSum);
     gameReset();
     gameMode = "start";
+    return winner;
   }
 };
 
 var gameResult = function (userSum, comSum) {
   if (userSum > comSum) {
-    return `You win!`;
+    return `You win! Click Submit to begin new round<br><br>${gifs.congrats}`;
   } else if (comSum > userSum) {
-    return `Dealer wins!`;
+    return `Dealer wins! Click Submit to begin new round<br><br>${gifs.dealer21}`;
   } else {
-    return `Nobody wins!`;
+    return `Nobody wins! Click Submit to begin new round<br><br>${gifs.itsATie}`;
   }
 };
 
-// concatenate cards on hand into string so i don't have to type them out like a retard
-// make life difficult by adding conditional that don't include ',' in last element
+// check for aces in current hand
+var checkAce = function (currentHandArray) {
+  var numOfAces = 0;
+  for (i = 0; i < currentHandArray.length; i++)
+    if (currentHandArray[i].cardName == "ace") {
+      numOfAces++;
+    }
+  return numOfAces;
+};
+
+// concatenate cards on hand into string, don't include comma on last element
 var concatHand = function (cardsOnHand) {
   var handString = "";
 
   for (n = 0; n < cardsOnHand.length; n++) {
-    handString += `${cardsOnHand[n].name} of ${cardsOnHand[n].suit}, `;
+    if (n == cardsOnHand.length - 1) {
+      handString += `${cardsOnHand[n].name} of ${cardsOnHand[n].suit} `;
+    } else {
+      handString += `${cardsOnHand[n].name} of ${cardsOnHand[n].suit}, `;
+    }
   }
   return handString;
 };
@@ -147,16 +184,9 @@ var gameReset = function () {
 };
 
 // evaluate blackjack
+// if holding 10 or picture cards + ace = blackjack
 var blackjack = function (userSum, dealerSum) {
-  if (userSum > 21 || dealerSum > 21) {
-    if (userSum > 21) {
-      gameReset();
-      return "You went over 21, you lose!<br>Click Submit to begin a new round.";
-    } else if (dealerSum > 21) {
-      gameReset();
-      return "Dealer went over 21, you win!<br>Click Submit to begin a new round.";
-    }
-  } else if (userSum == 21 || dealerSum == 21) {
+  if (userSum == 21 || dealerSum == 21) {
     if (userSum == 21) {
       gameReset();
       return "You got blackjack!<br>Click Submit to begin a new round.";
@@ -180,14 +210,6 @@ var dealersChoice = function (card1, card2) {
   // else return card array
 };
 
-// 2 players : human vs computer
-// computer is always dealer
-// dealer has to hit if hand < 17
-// player who is closer to 21 winds hand. aces can be 1 or 11
-// court cards are 10
-
-// ace can be 1 or 11
-
 var makeDeck = function () {
   var cardDeck = [];
   var suits = ["hearts", "diamonds", "clubs", "spades"];
@@ -202,6 +224,7 @@ var makeDeck = function () {
 
       if (cardName == 1) {
         cardName = "ace";
+        rankCounter = 11;
       } else if (cardName == 11) {
         cardName = "jack";
         rankCounter = 10;
@@ -220,8 +243,17 @@ var makeDeck = function () {
       };
 
       cardDeck.push(card);
-      if (cardName == "jack" || cardName == "queen" || cardName == "king") {
-        if (cardName == "jack") {
+      // change card ranks to 10 for court cards
+      if (
+        cardName == "ace" ||
+        cardName == "jack" ||
+        cardName == "queen" ||
+        cardName == "king"
+      ) {
+        if (cardName == "ace") {
+          rankCounter = 1;
+          rankCounter++;
+        } else if (cardName == "jack") {
           rankCounter = 11;
           rankCounter++;
         } else if (cardName == "queen") {
