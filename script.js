@@ -24,6 +24,8 @@ var gifs = {
     '<img src="https://c.tenor.com/TnSF3OSQE1cAAAAd/fireworks-congratulations.gif">',
   itsATie:
     '<img src="https://media1.giphy.com/media/xT3i0VNrc6Ny7bxfJm/giphy.gif">',
+  blackjack:
+    '<img src ="https://media0.giphy.com/media/l1IXY77djUsHH6S8o/giphy.gif">',
 };
 
 var testAce = {
@@ -56,10 +58,10 @@ var main = function (input) {
         return `What are the odds?! TWO blackjacks?!`;
       } else if (userHandSum == 21) {
         gameReset();
-        return `Blackjack! You win!`;
+        return `Blackjack! You win!<br><br>${gifs.blackjack}`;
       } else {
         gameReset();
-        return `Blackjack! Dealer wins!`;
+        return `Blackjack! Dealer wins!<br><br>${gifs.blackjack}`;
       }
     } else {
       gameMode = "user turn";
@@ -101,7 +103,7 @@ var main = function (input) {
         } else {
           gameReset();
           gameMode = "start";
-          return "You exceeded 21, you lose!";
+          return "You exceeded 21, you lose! Click Submit to begin a new round.";
         }
       } else {
         var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString}<br><br>Enter 'deal' to get additional card or 'pass' to end your turn`;
