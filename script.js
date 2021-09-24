@@ -11,19 +11,25 @@ var comHandSum = 0;
 var userHandString = "";
 var comHandString = "";
 
-var playedCards = []; // decide whether played cards get removed from unplayed deck or reshuffle after every round?
+// First Ace is always counted as 11, subsequent Aces are counted as 1
+var userAces = 0;
+var comAces = 0;
 
 var gifs = {
   dealer21:
     '<img src="https://media3.giphy.com/media/26ufcZICbgCSGe5sQ/giphy.gif">',
   thinking:
     '<img src="https://c.tenor.com/RFRPkimHjfcAAAAC/zach-galifianakis-very-bad-trip-meme.gif">',
-  applause:
-    '<img src="https://media0.giphy.com/media/lodhOPXFCRTbTY9TbL/giphy.gif">',
   congrats:
     '<img src="https://c.tenor.com/TnSF3OSQE1cAAAAd/fireworks-congratulations.gif">',
   itsATie:
     '<img src="https://media1.giphy.com/media/xT3i0VNrc6Ny7bxfJm/giphy.gif">',
+};
+
+var testAce = {
+  name: "ace",
+  suit: "clubs",
+  rank: 11,
 };
 
 var main = function (input) {
@@ -44,27 +50,28 @@ var main = function (input) {
     console.log("dealer card total: " + comHandSum);
 
     // evaluate blackjack status
-    blackjack(userHandSum, comHandSum);
+    if (blackjack(userHandSum, comHandSum) == true) {
+      if (userHandSum == 21 && comHandSum == 21) {
+        gameReset();
+        return `What are the odds?! TWO blackjacks?!`;
+      } else if (userHandSum == 21) {
+        gameReset();
+        return `Blackjack! You win!`;
+      } else {
+        gameReset();
+        return `Blackjack! Dealer wins!`;
+      }
+    } else {
+      gameMode = "user turn";
 
-    gameMode = "user turn";
+      userHandString = concatHand(userHand);
+      comHandString = concatHand(comHand);
 
-    userHandString = concatHand(userHand);
-    comHandString = concatHand(comHand);
+      var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString} <br><br>Enter 'deal' to get additional card or 'pass' to end your turn`;
 
-    var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString} <br><br>Enter 'deal' to get additional card or 'pass' to end your turn`;
-
-    return myOutputValue;
+      return myOutputValue;
+    }
   } else if (gameMode == "user turn") {
-    // waiting for user to hit or stand
-
-    // auto evaluate whether ace should be 1 or 11 (rank)
-    // ace should always count as 11 unless exceeds 21
-
-    // ace rank should start at 11
-    // if sum of cards > 21
-    // if hand[n].cardName == ace
-    // hand[n].rank = 1
-
     if (input.toLowerCase() == "deal") {
       userHand.push(deck.shift());
       userHandSum = calculateCardSum(userHand);
@@ -80,23 +87,27 @@ var main = function (input) {
       }
 
       if (userHandSum > 21) {
-        // check for aces in the hand
-        gameReset();
-        gameMode = "start";
-        return "You exceeded 21, you lose!";
+        // 1st Ace is always 11
+        var userAces = checkAce(userHand);
+        console.log("user has " + userAces + " Aces");
+
+        if (userAces > 1) {
+          // recalculates original sum of cards
+          userHandSum = calculateCardSum(userHand);
+          userHandSum -= userAces * 10;
+          myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString}<br><br>Enter 'deal' to get additional card or 'pass' to end your turn`;
+          console.log(userHand);
+          return myOutputValue;
+        } else {
+          gameReset();
+          gameMode = "start";
+          return "You exceeded 21, you lose!";
+        }
       } else {
         var myOutputValue = `Your hand: ${userHandString}<br>Dealer's hand: ${comHandString}<br><br>Enter 'deal' to get additional card or 'pass' to end your turn`;
 
         return myOutputValue;
       }
-      // need a conditional here to evaluate sum > 21
-      // deal until you lose bitch
-      // you automatically lose if you go beyond 21 and dealer wins
-      // reset game
-
-      // console.log(userHandString);
-
-      // dealer's turn
     } else if (input.toLowerCase() == "pass") {
       gameMode = "dealer turn";
 
@@ -105,6 +116,14 @@ var main = function (input) {
         comHandSum = calculateCardSum(comHand);
         comHandString = concatHand(comHand);
         console.log("dealer total after adding cards: " + comHandSum);
+        comAces = checkAce(comHand);
+        console.log("dealer has " + comAces + " Aces");
+
+        if (comHandSum > 21 && comAces > 1) {
+          comHandSum = calculateCardSum(comHand);
+          comHandSum -= (comAces - 1) * 10;
+          console.log("ace function" + comHandSum);
+        }
       }
 
       if (comHandSum > 21) {
@@ -141,13 +160,12 @@ var gameResult = function (userSum, comSum) {
 var checkAce = function (currentHandArray) {
   var numOfAces = 0;
   for (i = 0; i < currentHandArray.length; i++)
-    if (currentHandArray[i].cardName == "ace") {
+    if (currentHandArray[i].name == "ace") {
       numOfAces++;
     }
   return numOfAces;
 };
 
-// concatenate cards on hand into string, don't include comma on last element
 var concatHand = function (cardsOnHand) {
   var handString = "";
 
@@ -187,27 +205,8 @@ var gameReset = function () {
 // if holding 10 or picture cards + ace = blackjack
 var blackjack = function (userSum, dealerSum) {
   if (userSum == 21 || dealerSum == 21) {
-    if (userSum == 21) {
-      gameReset();
-      return "You got blackjack!<br>Click Submit to begin a new round.";
-    } else if (dealerSum == 21) {
-      gameReset();
-      return "Dealer got blackjack!<br>Click Submit to begin a new round.";
-    }
+    return true;
   }
-};
-
-// if com's turn, run function function -> hit if under 17 stand if more --> click submit to determine winner
-var dealersChoice = function (card1, card2) {
-  var cardSum = card1 + card2;
-
-  // find sum with rank
-  // hit if under 17
-  //
-  // stand if above 17
-  // if 21 return win
-  // else if 21 return lose
-  // else return card array
 };
 
 var makeDeck = function () {
